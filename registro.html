@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login usuarios</title>
+  <!-- importamos jquery y bootstrap desde la web, asi aligeramos el codigo aunque dependemos de la conexion -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <!-- CSS only -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <!-- JavaScript Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <style>
+    
+    #registro{
+        margin:50px
+    }
+    .title{
+        text-align: center;
+        margin-top: 50px;
+    }
+    .fail-repeat{
+        border: 1px solid red !important
+    }
+    .red{
+        color:red
+    }
+  </style>
+</head>
+
+<body>
+  <!--Contenido que solo ve el usuario logueado-->
+  <div id="bienvenida" style="text-align: center;display:none">
+    <h1>Registro</h1>
+  </div>
+
+  <!--Bortón para abrir el modal-->
+  
+          <h5 class="title">REGÍSTRATE</h5>
+          <!-- <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button> -->
+          <form name="registro" id="registro">
+            <div class="form-group">
+              <label for="user" class="col-form-label">Usuario: </label>
+              <input type="text" class="form-control" name="user" id="user">
+            </div>
+            <div class="form-group">
+              <label for="password" class="col-form-label">Password: </label>
+              <input type="password" class="form-control" id="password" name="password" required />
+              <label for="rpassword" class="col-form-label">Repite password: </label>
+              <input type="password" class="form-control" id="rpassword" name="rpassword" required />
+            </div>
+            <br>
+            <input type="submit" class="btn btn-primary" id="boton" value="enviar">
+          </form>
+       
+
+  <script>
+    $(document).ready(function () {
+      $('#registro').on('submit', function (e) {
+        //formul.onsubmit = function (e) {  
+        e.preventDefault();
+
+        async function envio() { // Declaramos la función que enviará los datos
+          let path = "http://localhost/CURSO-IFCD0110/LOGINPHP/";
+          //  dni();
+          const datos = new FormData(e.target); // Aquí recogemos los datos del form convertidos a objeto 
+          let toSend = Object.fromEntries(datos); // Creamos el objeto tipo jSon que enviaremos
+          if (toSend.password != toSend.rpassword) {
+            alert('Las contraseñas no coinciden')
+            $('#rpassword').addClass('fail-repeat');
+            // $('#id').html('<h1>')
+            // document.getElementById('id').innerHTML='<h1>'
+            
+            $('#rpassword').focus();  //si falla volvemos el foco a la ventana de repeticion y la destacamos
+            return false;             //devolvemos un false que puede usarse como bandera para el tema de la conexion
+          }
+          let enviar = await fetch(path + 'registro.php', // Enviamos los datos a la url path + endpoint
+            { // 2º parámetro: Ajustes
+              method: 'POST', // POST, GET, PUT , DELETE ..
+              body: JSON.stringify(toSend)  //el metodo stringify convierte a texto el contenido del json
+            }).then(async response => {
+
+              if (response.status != 200) { //si hay algun codigo distinto al ok lo mostramos en la pantalla
+                $('.title').text(await response.text());
+                $('.title').addClass('red');
+              }else{
+                $('.title').text("Bienvenido "+ toSend.user);
+                sessionStorage.setItem('esLogin',toSend.user);
+                sessionStorage.setItem('password',toSend.password);
+                setTimeout(function(){
+                  location.href="index.html";
+                },2000) //le damos un tiempo largo de conexion por si el servidor va algo lento.
+              }
+            }).catch(error => {
+                $('.title').text(JSON.stringify(error));
+                $('.title').addClass('red');
+            });
+        }
+        envio();
+      })
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login usuarios</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <!-- CSS only -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  <!-- JavaScript Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet">
+  <style>
+    #abremodal {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!--Contenido que solo ve el usuario logueado-->
+  <div id="bienvenida" style="display: none;margin:30px">
+    <h1 style="text-align: center;">HOLA BOOTSRAP</h1>
+  <div id="nav">
+    <a href="perfil.html" class="btn btn-success">Ir a mi perfil <i class="fa fa-user"></i></a>
+    
+    <button class="btn btn-success" onclick="cerrarSesion()">
+      Cerrar sesion
+    </button>
+  </div>
+    <h5 id="errMsg"></h5>
+  </div>
+  <!--Botón para abrir el modal-->
+  <button id="abremodal" class="btn btn-success" style="display: none">Login</button>
+
+  <!--HTML que dibuja el modal que por defecto está en oculto (display none)-->
+  <div id="elModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Indica tus credenciales</h5>
+          <!-- <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button> -->
+        </div>
+        <div class="modal-body">
+          <form name="login" id="login">
+            <div class="form-group">
+              <label for="user" class="col-form-label">Usuario: </label>
+              <input type="text" class="form-control" name="user" id="user">
+            </div>
+            <div class="form-group">
+              <label for="password" class="col-form-label">Password: </label>
+              <input type="password" class="form-control" id="password" name="password" />
+            </div>
+            <input type="submit" class="btn btn-primary" id="boton" value="enviar">
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-info" onclick="location.href='registro.html'">¿No tienes cuenta?</button>
+          <!--   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let cerrarSesion = function () {
+      sessionStorage.removeItem('esLogin');
+      sessionStorage.removeItem('password');
+      //  window.location.href="/LOGINPHP";
+      $("#elModal").modal('show');
+      $('#bienvenida').hide();
+    }
+    $(document).ready(function () {
+      // (javascript) window.onload = function(){}
+      let esLogin = sessionStorage.getItem('esLogin') || false;
+      let pass = sessionStorage.getItem('password') || false;
+      let path = "http://localhost/CURSO-IFCD0110/LOGINPHP/";
+      if (!esLogin) {
+        $("#elModal").modal('show');
+        // document.getElementById('elModal').modal('show')
+
+      } else {
+        $('#bienvenida').show('slow'); // jQuery
+        //document.getelementById('bienvenida').style.display='block';  // document.getelementById('bienvenida').style.display='block' 
+        $("#elModal").modal('hide');
+      }
+      $('#abremodal').on('click', function () {
+        // El evento click en el botón abrir modal (o ,login)
+        $("#elModal").modal('show');
+      })
+      $('#login').on('submit', function (e) {
+        $('#abremodal').show(); 
+        //formul.onsubmit = function (e) {  
+        e.preventDefault();
+        async function envio() { // Declaramos la función que enivará los datos
+          let path = "http://localhost/CURSO-IFCD0110/LOGINPHP/";
+          //  dni();
+          const datos = new FormData(e.target); // Aquí recogemos los datos del form                            // convertidos a objeto
+          let toSend = Object.fromEntries(datos); // Creamos el objeto tipo jSon que enviaremos
+          
+          let enviar = await fetch(path + 'login.php', // Enviamos los datos a la url path + endpoint
+            { // 2º parámetro: Ajustes
+              method: 'POST', // POST, GET, PUT , DELETE ..
+              body: JSON.stringify(toSend)
+            }).then(async response => {
+              $("#elModal").modal('hide');
+              
+              if (response.status != 200) {
+                $('#bienvenida h1').text('ERROR: User o Password incorrectos');
+                $('#errMsg').append(JSON.stringify(e));
+                $('#errMsg').show();
+                $('#abremodal').show();
+                $('#bienvenida').show('slow');
+                $('#nav').hide();
+                return false;
+              } else { 
+                
+                sessionStorage.setItem('esLogin', toSend.user);
+                sessionStorage.setItem('password', toSend.password);
+                $('#errMsg').hide();
+                $('#bienvenida h1').text('Bienvenido de nuevo: ' + toSend.user);
+                $('#bienvenida').show();
+                $('#abremodal').hide();
+                $('#nav').show();
+              }
+           //   location.reload();
+            }).catch(error => {
+              $('#bienvenida h1').text('Hubo algún error ¿Tienes conexión?');
+              $('#bienvenida').show();
+              $("#elModal").modal('hide');
+            });
+          $("#elModal").modal('hide');
+        }
+        envio();
+      })
+    });
+  </script>
+</body>
+</html>

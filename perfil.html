@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login usuarios</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+        crossorigin="anonymous"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        #registro {
+            margin: 50px
+        }
+
+        .title {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .fail-repeat {
+            border: 1px solid red !important
+        }
+
+        .red {
+            color: red
+        }
+
+        body {
+            padding: 25px
+        }
+    </style>
+</head>
+
+<body>
+    <!--Contenido que solo ve el usuario logueado-->
+    <a class="btn btn-success" onclick="javasript:history.back()"><i class=" fa fa-backward"></i> Volver</a>
+    <div id="bienvenida">
+        <h1 style="text-align: center;">Perfil de usuario</h1>
+    </div>
+
+    <!--Bortón para abrir el modal-->
+    <!-- <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button> -->
+    <h3 class="title"></h3>
+    <h5 class="modif">¿Cambiar user o password?</h5>
+    <form name="modificar" id="modificar">
+        <input type="hidden" name="userAnt" id="userAnt">
+        <input type="hidden" name="passwordAnt" id="passwordAnt">
+        <div class="form-group">
+            <label for="user" class="col-form-label">Usuario: </label>
+            <input type="text" class="form-control" name="user" id="user">
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-form-label">Password: </label>
+            <input type="password" class="form-control" id="password" name="password" required />
+            <label for="rpassword" class="col-form-label">Repite password: </label>
+            <input type="password" class="form-control" id="rpassword" name="rpassword" required />
+        </div>
+        <br>
+        <input type="submit" class="btn btn-primary" id="boton" value="enviar">
+    </form>
+    <hr>
+    <h3 style="color: red">DANGER ZONE!!</h3>
+    <button class="btn btn-danger" id="eliminar">Eliminar usuario</button>
+    <script>
+        let path = "http://localhost/CURSO-IFCD0110/LOGINPHP/";
+        let esLogin = sessionStorage.getItem('esLogin') || false;
+        let pass = sessionStorage.getItem('password') || false;
+        if (!esLogin) location.href = "index.html";
+        $(document).ready(function () {
+            async function listardatos() {
+
+                let enviar = await fetch(path + 'perfil.php?user=' + esLogin + '&password=' + pass,
+                    {
+                        method: 'GET'
+
+                    }
+
+                ).then(async response => {
+                    let datosUsusario = await response.json();
+                    let html = `
+                    <ul class="list-group">
+                        <li class="list-group-item">Nombre de usuario: ${datosUsusario[0].login}</li>
+                        <li class="list-group-item">Fecha de alta: ${datosUsusario[0].date}</li>
+                        <li class="list-group-item">ID: ${datosUsusario[0].id}</li>
+                    </ul>`;
+                    $('#bienvenida').append(html);
+                    $('#userAnt').val(datosUsusario[0].login);
+                    $('#passwordAnt').val(datosUsusario[0].password);
+                })
+            }
+            listardatos();
+            $('#modificar').on('submit', function (e) {
+                //formul.onsubmit = function (e) {  
+                e.preventDefault();
+                async function envio(listardatos) { // Declaramos la función que enivará los datos
+                    const datos = new FormData(e.target); // Aquí recogemos los datos del form                            // convertidos a objeto
+                    let toSend = Object.fromEntries(datos); // Creamos el objeto tipo jSon que enviaremos
+                    if (toSend.password != toSend.rpassword) {
+                        alert('Las contraseñas no coinciden')
+                        $('#rpassword').addClass('fail-repeat');
+                        $('#rpassword').focus();
+                        return false;
+                    }
+                    let enviar = await fetch(path + 'perfil.php', // Enviamos los datos a la url path + endpoint
+                        { // 2º parámetro: Ajustes
+                            method: 'POST', // POST, GET, PUT , DELETE ..
+                            body: JSON.stringify(toSend)
+                        }).then(async response => {
+
+                            if (response.status != 200) {
+                                $('.title').text(await response.text());
+                                $('.title').addClass('red');
+                            } else {
+                                $('.title').text(await response.text());
+                                sessionStorage.setItem('esLogin', toSend.user);
+                                sessionStorage.setItem('pass', toSend.password);
+
+                                $('.modif').text('USUARIO MODFICADO');
+                                $('.modif').addClass('red');
+
+                            }
+                        }).catch(error => {
+                            $('.title').text(JSON.stringify(error));
+                            $('.title').addClass('red');
+                        });
+                }
+                envio();
+            })
+            $('#eliminar').on('click', function (e) {
+                e.preventDefault();
+                if (!confirm('¿Estás seguro? Esta operación es irreversible')) return false;
+                async function eliminar() {
+                    let toSend = {
+                        'user': esLogin,
+                        'password': pass,
+                        'delete': true
+                    }
+                    let enviar = await fetch(path + 'perfil.php', // Enviamos los datos a la url path + endpoint
+                        { // 2º parámetro: Ajustes
+                            method: 'POST', // POST, GET, PUT , DELETE ..
+                            body: JSON.stringify(toSend)
+                        }).then(async response => {
+
+                            if (response.status != 200) {
+                                $('.title').text('Hubo algún problema al intentar eliminar la cuenta de usuario');
+
+                            } else {
+                                sessionStorage.removeItem('esLogin');
+                                sessionStorage.removeItem('pass');
+                                $('.title').text('Usuario eliminado. Gracias por confiar en nostros');
+                                setTimeout(function () {
+                                    location.href = 'index.html';
+                                }, 1500)
+
+                            }
+                        }).catch(error => {
+                            $('.title').text(JSON.stringify(error));
+                            $('.title').addClass('red');
+                        });
+
+                }
+                eliminar();
+
+            })
+        });
+    </script>
+</body>
+
+</html>
